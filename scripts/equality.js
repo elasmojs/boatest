@@ -1,0 +1,18 @@
+try{
+    console.log(1 == 1);
+    // expected output: true
+
+    console.log('hello' == 'hello');
+    // expected output: true
+
+    console.log('1' ==  1);
+    // expected output: true
+
+    console.log(0 == false);
+    // expected output: true
+
+    true;
+}catch(e){
+    console.log(e);
+    false;
+}

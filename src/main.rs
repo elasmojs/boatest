@@ -1,0 +1,93 @@
+use std::time::{SystemTime};
+use std::{fs::read_to_string, fs::read_dir};
+use prettytable::{row, cell, Table};
+
+use boa::{
+    exec::Interpreter,
+    forward_val,
+    realm::Realm
+};
+
+struct TestResult{
+    pub name: String,
+    pub status: bool,
+    pub time: String
+}
+
+impl TestResult{
+    fn default() -> TestResult{
+        return TestResult{
+            name: String::from(""),
+            status: false,
+            time: String::from("")
+        }
+    }
+}
+
+fn main() {
+    let start = SystemTime::now();
+    let realm = Realm::create();
+    let mut engine = Interpreter::new(realm);
+    let folder_res = read_dir("scripts");
+    let scripts_folder = folder_res.unwrap();
+
+    let mut files_cnt = 0;
+    let mut success_cnt = 0;
+    let mut failed_cnt = 0;
+    let mut results = Vec::new();
+    for files in scripts_folder{
+        files_cnt += 1;
+        let mut result = TestResult::default();
+        let file_name = files.unwrap().path();
+        let file = file_name.to_str().unwrap();
+        result.name = String::from(file);
+        println!("\r\n=======================");
+        println!("Test: {}\r\n", file);
+        let now = SystemTime::now();
+        let buffer = read_to_string(file);
+        if buffer.is_err(){
+            result.status = false;
+            println!("Error: {}", buffer.unwrap_err());
+        }else{
+            match forward_val(&mut engine, &buffer.unwrap()) {
+                Ok(v) => {
+                    if v.is_boolean() && v.to_boolean() == true{
+                        result.status = true;
+                    }else{
+                        result.status = false;
+                    }
+                    print!("{}", v)
+                },
+                Err(v) => {
+                    result.status = false;
+                    eprint!("{}", v)
+                }
+            }
+        }
+        
+        if result.status {
+            success_cnt += 1;
+        }else{
+            failed_cnt += 1;
+        }
+
+        result.time = format!("{} ms", now.elapsed().unwrap().as_millis());
+        println!("\r\n\r\nTime Taken: {}", result.time);
+        println!("=======================\r\n");
+        results.push(result);
+    }
+    let total_time = start.elapsed().unwrap().as_millis();
+    let mut table = Table::new();
+    table.add_row(row!["Test Name", "Status", "Time Taken"]);
+
+    println!("=========== Results ===============");
+    for result in results{
+        //println!("{}\t\t\t- {}\t- {}", result.name, result.status, result.time);
+        table.add_row(row![result.name, result.status, result.time]);
+    }
+    table.printstd();
+    println!("Total Tests: {}", files_cnt);
+    println!("Total Success: {}", success_cnt);
+    println!("Total Failed: {}", failed_cnt);
+    println!("Total Time Taken: {} ms", total_time);
+}
