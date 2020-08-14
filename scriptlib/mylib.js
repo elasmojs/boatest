@@ -1,0 +1,1 @@
+window.msg = 'Hello world';

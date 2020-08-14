@@ -44,6 +44,12 @@ fn main() {
     let requirefn = Function::builtin(Vec::new(), require);
     realm.global_obj.set_field("require", Value::from_func(requirefn));
 
+    //let moduleobj = Value::new_object(Some(&realm.global_obj));
+    //moduleobj.set_field("exports", Value::from("Hello Module!"));
+    //realm.global_obj.set_field("module", moduleobj);
+    let windowobj = Value::new_object(Some(&realm.global_obj));
+    realm.global_obj.set_field("window", windowobj);
+
     //Adding custom object
     let gobj = Value::new_object(Some(&realm.global_obj));
     let addfn = Function::builtin(Vec::new(), add);
@@ -123,13 +129,17 @@ fn rusty_hello(_:&Value, args:&[Value], _:&mut Interpreter) -> ResultValue{
 
 fn require(_:&Value, args:&[Value], engine:&mut Interpreter) -> ResultValue{
     let arg = args.get(0).unwrap();
+    println!("Loading: {}", arg);
     let buffer = read_to_string(arg.to_string());
     if buffer.is_err(){
         println!("Error: {}", buffer.unwrap_err());
         return ResultValue::from(Ok(Value::from(-1)));
     }else{
         forward(engine, &buffer.unwrap());
-        return ResultValue::from(Ok(Value::from(0)));
+        //let module_exports = engine.realm.global_obj.get_field("module").get_field("exports");
+        //println!("{:?}", module_exports.type);
+        let return_value = ResultValue::from(Ok(Value::from(0)));
+        return return_value;
     }
 }
 
